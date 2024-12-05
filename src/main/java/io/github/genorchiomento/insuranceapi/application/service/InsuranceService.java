@@ -5,12 +5,15 @@ import io.github.genorchiomento.insuranceapi.application.dto.InsuranceSimulation
 import io.github.genorchiomento.insuranceapi.application.exception.CustomerNotFoundException;
 import io.github.genorchiomento.insuranceapi.application.exception.InvalidRequestException;
 import io.github.genorchiomento.insuranceapi.domain.model.Insurance;
+import io.github.genorchiomento.insuranceapi.domain.model.InsuranceType;
 import io.github.genorchiomento.insuranceapi.domain.repository.InsuranceRepository;
 import io.github.genorchiomento.insuranceapi.infrastructure.integration.CustomerApiIntegration;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class InsuranceService {
@@ -24,18 +27,20 @@ public class InsuranceService {
     }
 
     public List<InsuranceSimulationResponse> simulateInsurance() {
-        return List.of(
-                new InsuranceSimulationResponse("Bronze", "Cobertura básica para danos e roubos.", 50.0),
-                new InsuranceSimulationResponse("Prata", "Cobertura intermediária, incluindo desastres naturais.", 100.0),
-                new InsuranceSimulationResponse("Ouro", "Cobertura completa e assistência 24h.", 150.0)
-        );
+        return Stream.of(InsuranceType.values())
+                .map(type -> new InsuranceSimulationResponse(
+                        type.name(),
+                        type.getDescription(),
+                        type.getMonthlyCost()
+                ))
+                .collect(Collectors.toList());
     }
 
     public Insurance contractInsurance(InsuranceRequest request) {
-        validateRequest(request);
+        validateInsuranceType(request.insuranceType());
 
         if (!customerApiIntegration.customerExists(request)) {
-            throw new CustomerNotFoundException("Customer not found with CPF: " + request.cpf());
+            throw new RuntimeException("Customer not found with CPF: " + request.cpf());
         }
 
         Insurance insurance = new Insurance(
@@ -48,12 +53,11 @@ public class InsuranceService {
         return insuranceRepository.save(insurance);
     }
 
-    private void validateRequest(InsuranceRequest request) {
-        if (request.insuranceType() == null || request.insuranceType().isBlank()) {
-            throw new InvalidRequestException("Insurance type is mandatory");
-        }
-        if (request.cpf() == null || request.cpf().isBlank()) {
-            throw new InvalidRequestException("CPF is mandatory");
+    private void validateInsuranceType(String insuranceType) {
+        try {
+            InsuranceType.valueOf(insuranceType.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidRequestException("Invalid insurance type: " + insuranceType);
         }
     }
 }
