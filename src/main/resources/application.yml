@@ -1,0 +1,34 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: insurance-api
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/insurancedb
+
+customer:
+  client:
+    integration:
+      baseUrl: http://localhost:8081/api/customers
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 30000
+        readTimeout: 30000
+  httpclient:
+    disableSslValidation: true
+    enabled: false
+  okhttp:
+    enabled: true
+
+resilience4j:
+  retry:
+    instances:
+      default-retry:
+        maxAttempts: 3
+        waitDuration: 500ms
