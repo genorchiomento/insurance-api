@@ -40,7 +40,7 @@ public class InsuranceService {
         validateInsuranceType(request.insuranceType());
 
         if (!customerApiIntegration.customerExists(request)) {
-            throw new RuntimeException("Customer not found with CPF: " + request.cpf());
+            throw new CustomerNotFoundException("Customer not found with CPF: " + request.cpf());
         }
 
         Insurance insurance = new Insurance(
@@ -52,6 +52,7 @@ public class InsuranceService {
 
         return insuranceRepository.save(insurance);
     }
+
 
     private void validateInsuranceType(String insuranceType) {
         try {
